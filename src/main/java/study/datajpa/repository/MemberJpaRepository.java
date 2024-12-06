@@ -39,4 +39,10 @@ public class MemberJpaRepository {
     public long count() {
         return entityManager.createQuery("select count(m) from Member m", Long.class).getSingleResult();
     }
+
+    public List<Member> findByUsername(String username) {
+        return entityManager.createNamedQuery("Member.findByUsername",Member.class)
+                .setParameter("username", username)
+                .getResultList();
+    }
 }
