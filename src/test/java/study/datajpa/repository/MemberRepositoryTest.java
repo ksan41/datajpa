@@ -162,4 +162,56 @@ class MemberRepositoryTest {
         assertThat(resultCount).isEqualTo(3);
         assertThat(member5.getAge()).isEqualTo(41);
     }
+
+    @Test
+    public void findMemberLazy() {
+        // member1 -> teamA, member2 -> teamB
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 20, teamB);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        em.flush();
+        em.clear();
+
+        List<Member> members = memberRepository.findAll();
+
+        for (Member member: members) {
+            System.out.println("member = " + member.getUsername());
+            System.out.println("team = " + member.getTeam().getName());
+        }
+    }
+
+    @Test
+    public void queryHint() {
+        Member member1 = memberRepository.save(new Member("member1", 10));
+        memberRepository.save(member1);
+        em.flush();
+        em.clear();
+
+        Member findMember = memberRepository.findReadOnlyUsername("member1");
+        findMember.setUsername("member2");
+
+        em.flush();
+    }
+
+    @Test
+    public void lock() {
+        Member member1 = memberRepository.save(new Member("member1", 10));
+        memberRepository.save(member1);
+        em.flush();
+        em.clear();
+
+        List<Member> findMembers = memberRepository.findLockByUsername("member1");
+
+    }
+
+    @Test
+    public void callCustom() {
+        List<Member> result = memberRepository.findMemberCustom();
+    }
 }
