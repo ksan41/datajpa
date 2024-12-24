@@ -193,7 +193,7 @@ class MemberRepositoryTest {
         em.flush();
         em.clear();
 
-        Member findMember = memberRepository.findReadOnlyUsername("member1");
+        Member findMember = memberRepository.findReadOnlyByUsername("member1");
         findMember.setUsername("member2");
 
         em.flush();
@@ -207,7 +207,9 @@ class MemberRepositoryTest {
         em.clear();
 
         List<Member> findMembers = memberRepository.findLockByUsername("member1");
-
+        for(Member m : findMembers) {
+            System.out.println("member : " + m.getUsername());
+        }
     }
 
     @Test
