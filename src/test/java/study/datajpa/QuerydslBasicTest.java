@@ -9,8 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.datajpa.entity.Member;
-import study.datajpa.entity.QMember;
 import study.datajpa.entity.Team;
+
+import static study.datajpa.entity.QMember.*;
 
 @SpringBootTest
 @Transactional
@@ -19,8 +20,11 @@ public class QuerydslBasicTest {
     @PersistenceContext
     EntityManager em;
 
+    JPAQueryFactory queryFactory;
+
     @BeforeEach
     public void before() {
+        queryFactory = new JPAQueryFactory(em);
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
         em.persist(teamA);
@@ -47,15 +51,36 @@ public class QuerydslBasicTest {
 
     @Test
     public void startQuerydsl() {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(em);
-        QMember qMember = new QMember("m");
-
         Member findMember = queryFactory
-                        .select(qMember)
-                        .from(qMember)
-                        .where(qMember.username.eq("member1"))
+                        .select(member)
+                        .from(member)
+                        .where(member.username.eq("member1"))
                         .fetchFirst();
         Assertions.assertEquals(findMember.getUsername(), "member1");
+    }
 
+    @Test
+    public void search() {
+        Member findMember =
+                queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1")
+                        .and(member.age.between(10, 30))
+                ).fetchOne();
+        Assertions.assertEquals(findMember.getUsername(), "member1");
+        Assertions.assertEquals(findMember.getAge(), 10);
+    }
+
+    @Test
+    public void searchAndParam() {
+        Member findMember =
+                queryFactory
+                        .selectFrom(member)
+                        .where(
+                                member.username.eq("member1")
+                                ,member.age.eq(10)
+                        ).fetchOne();
+        Assertions.assertEquals(findMember.getUsername(), "member1");
+        Assertions.assertEquals(findMember.getAge(), 10);
     }
 }
