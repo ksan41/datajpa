@@ -1,6 +1,7 @@
 package study.datajpa;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -10,11 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.datajpa.entity.Member;
+import study.datajpa.entity.QTeam;
 import study.datajpa.entity.Team;
 
 import java.util.List;
 
 import static study.datajpa.entity.QMember.*;
+import static study.datajpa.entity.QTeam.*;
 
 @SpringBootTest
 @Transactional
@@ -133,5 +136,55 @@ public class QuerydslBasicTest {
         Assertions.assertEquals(member5.getUsername(), "member5");
         Assertions.assertEquals(member6.getUsername(), "member6");
         Assertions.assertNull(memberNull.getUsername());
+    }
+
+    @Test
+    public void paging1() {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+        Assertions.assertEquals(result.size(), 2);
+    }
+
+    @Test
+    public void aggregation() {
+        List<Tuple> result = queryFactory
+                .select(member.count(),
+                        member.age.sum(),
+                        member.age.avg(),
+                        member.age.max(),
+                        member.age.min())
+                .from(member)
+                .fetch();
+        Tuple tuple = result.get(0);
+        Assertions.assertEquals(tuple.get(member.count()), 4);
+        Assertions.assertEquals(tuple.get(member.age.sum()), 100);
+    }
+
+    /**
+     * 팀의 이름과 각 팀의 평균 연령
+     * @throws Exception
+     */
+    @Test
+    public void group() throws Exception {
+        // given
+        List<Tuple> result = queryFactory
+                .select(team.name, member.age.avg())
+                .from(member)
+                .join(member.team, team)
+                .groupBy(team.name)
+                .fetch();
+        Tuple teamA = result.get(0);
+        Tuple teamB = result.get(1);
+
+        // then
+        Assertions.assertEquals(teamA.get(team.name), "teamA");
+        Assertions.assertEquals(teamA.get(member.age.avg()), 15);
+
+        Assertions.assertEquals(teamB.get(team.name), "teamB");
+        Assertions.assertEquals(teamB.get(member.age.avg()), 35);
     }
 }
