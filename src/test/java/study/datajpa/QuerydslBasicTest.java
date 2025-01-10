@@ -187,4 +187,87 @@ public class QuerydslBasicTest {
         Assertions.assertEquals(teamB.get(team.name), "teamB");
         Assertions.assertEquals(teamB.get(member.age.avg()), 35);
     }
+
+    /**
+     * 팀 A에 소속된 모든 회원
+     * @throws Exception
+     */
+    @Test
+    public void join() throws Exception {
+        // when
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .join(member.team, team)
+                .where(team.name.eq("teamA"))
+                .fetch();
+        // then
+        Assertions.assertEquals(result.get(0).getUsername(), "member1");
+        Assertions.assertEquals(result.get(1).getUsername(), "member2");
+    }
+
+    /**
+     * 세타 조인
+     * 회원 이름이 팀 이름과 같은 회원 조회
+     * 외부 조인 불가능
+     * @throws Exception
+     */
+    @Test
+    public void thetaJoin() throws Exception {
+        // given
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        // when
+        List<Member> result = queryFactory
+                .select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+
+        // then
+        Assertions.assertEquals(result.get(0).getUsername(), "teamA");
+        Assertions.assertEquals(result.get(1).getUsername(), "teamB");
+    }
+
+    /**
+     * 회원과 팀 조인, 팀 이름이 teamA인 팀만, 회원은 모두 조회
+     * JPQL : select m , t from Member m left join m.team t on t.name = 'teamA'
+     * @throws Exception
+     */
+    @Test
+    public void joinOnFiltering() throws Exception {
+        // when
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(member.team, team).on(team.name.eq("teamA"))
+                .fetch();
+
+        for (Tuple tuple: result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * 연관관계가 없는 엔티티 외부 조인
+     * 회원 이름 = 팀 이름
+     * @throws Exception
+     */
+    @Test
+    public void joinOnNoRelation() throws Exception {
+        // given
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        // when
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team).on(member.username.eq(team.name))
+                .fetch();
+
+        for (Tuple t : result) {
+            System.out.println("tuple = " + t);
+        }
+    }
 }
